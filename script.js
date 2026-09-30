@@ -12,6 +12,8 @@ const menuBtn = document.getElementById('menuBtn');
 const resultMenuBtn = document.getElementById('resultMenuBtn');
 const primaryResultBtn = document.getElementById('primaryResultBtn');
 
+const levelOptions = [...document.querySelectorAll('.level-option')];
+
 const switchA = document.getElementById('switchA');
 const switchB = document.getElementById('switchB');
 const stateA = document.getElementById('stateA');
@@ -68,6 +70,7 @@ const vehicleColors = [
   '#f05fa7', '#5cc85c'
 ];
 
+let selectedLevel = 1;
 let currentLevel = 1;
 let routes = {};
 let running = false;
@@ -251,11 +254,20 @@ function createVehicle(routeKey) {
   if (tooCloseToSpawn) return false;
 
   const element = document.createElement('div');
-  element.className = `vehicle${route.orientation === 'vertical' ? ' vertical' : ''}`;
+  const bodyTypes = ['compact', 'sedan', 'suv', 'taxi'];
+  const bodyType = bodyTypes[Math.floor(Math.random() * bodyTypes.length)];
+  element.className = `vehicle ${bodyType}${route.orientation === 'vertical' ? ' vertical' : ''}`;
   element.style.setProperty(
     '--car-color',
     vehicleColors[Math.floor(Math.random() * vehicleColors.length)]
   );
+  element.innerHTML = `
+    <span class="car-cabin"></span>
+    <span class="car-wheel wheel-front"></span>
+    <span class="car-wheel wheel-back"></span>
+    <span class="car-light headlight"></span>
+    <span class="car-light taillight"></span>
+  `;
   vehiclesLayer.appendChild(element);
 
   const levelBoost = currentLevel === 2 ? 1.06 : 1;
@@ -510,7 +522,7 @@ function updateCongestion(delta) {
     100
   );
 
-  const changeRate = target > congestion ? 28 : 18;
+  const changeRate = target > congestion ? 15 : 20;
   const difference = target - congestion;
 
   if (Math.abs(difference) > 0.02) {
@@ -545,7 +557,7 @@ function updateCongestion(delta) {
   if (congestion >= 99.5) {
     overloadTime += delta;
 
-    if (overloadTime >= 0.8) {
+    if (overloadTime >= 1.1) {
       running = false;
       showResult('congestion');
     }
@@ -801,7 +813,15 @@ function gameLoop(now) {
   requestAnimationFrame(gameLoop);
 }
 
-playBtn.addEventListener('click', () => startLevel(1));
+levelOptions.forEach(option => {
+  option.addEventListener('click', () => {
+    selectedLevel = Number(option.dataset.level);
+    levelOptions.forEach(item => item.classList.toggle('selected', item === option));
+    playBtn.textContent = `▶ JUGAR NIVEL ${selectedLevel}`;
+  });
+});
+
+playBtn.addEventListener('click', () => startLevel(selectedLevel));
 howBtn.addEventListener('click', () => showScreen('how'));
 howBackBtn.addEventListener('click', () => showScreen('menu'));
 menuBtn.addEventListener('click', stopGame);
