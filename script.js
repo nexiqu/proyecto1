@@ -10,9 +10,20 @@ const howBtn = document.getElementById('howBtn');
 const howBackBtn = document.getElementById('howBackBtn');
 const menuBtn = document.getElementById('menuBtn');
 const resultMenuBtn = document.getElementById('resultMenuBtn');
+const primaryResultBtn = document.getElementById('primaryResultBtn');
 const switchBtn = document.getElementById('switchBtn');
 const trafficState = document.getElementById('trafficState');
 const vehiclesLayer = document.getElementById('vehiclesLayer');
+const scoreDisplay = document.getElementById('scoreDisplay');
+const congestionText = document.getElementById('congestionText');
+const congestionBar = document.getElementById('congestionBar');
+const congestionMeter = congestionBar.parentElement;
+const resultCard = document.getElementById('resultCard');
+const resultIcon = document.getElementById('resultIcon');
+const resultEyebrow = document.getElementById('resultEyebrow');
+const resultTitle = document.getElementById('resultTitle');
+const resultScore = document.getElementById('resultScore');
+const resultCongestion = document.getElementById('resultCongestion');
 
 let greenDirection = 'horizontal';
 let switching = false;
@@ -21,6 +32,11 @@ let lastFrame = performance.now();
 let spawnElapsed = 0;
 let nextSpawn = 1.5;
 let vehicleId = 0;
+let score = 0;
+let congestion = 0;
+let maxCongestion = 0;
+let overloadTime = 0;
+let resultAction = null;
 const vehicles = [];
 
 const carColors = ['#1677ff', '#ff3b30', '#ffc928', '#20c997', '#ff8a34', '#8f6bff', '#f1f5f9'];
@@ -68,6 +84,7 @@ function switchLights() {
   allRed();
 
   window.setTimeout(() => {
+    if (!running) return;
     greenDirection = greenDirection === 'horizontal' ? 'vertical' : 'horizontal';
     paintLights();
     switching = false;
@@ -87,8 +104,10 @@ function createVehicle(direction) {
     id: ++vehicleId,
     direction,
     pos: lane.start,
+    previousPos: lane.start,
     speed: 8.5 + Math.random() * 2.2,
     committed: false,
+    waiting: false,
     element
   };
 
@@ -133,6 +152,7 @@ function applyQueueSpacing(direction) {
 
 function updateVehicles(delta) {
   for (const vehicle of vehicles) {
+    vehicle.previousPos = vehicle.pos;
     const lane = lanes[vehicle.direction];
     const step = vehicle.speed * delta * lane.sign;
 
@@ -160,13 +180,42 @@ function updateVehicles(delta) {
     const vehicle = vehicles[i];
     const lane = lanes[vehicle.direction];
 
+    vehicle.waiting = !vehicle.committed && Math.abs(vehicle.pos - vehicle.previousPos) < 0.025;
     renderVehicle(vehicle);
 
     const finished = lane.sign > 0 ? vehicle.pos > lane.end : vehicle.pos < lane.end;
     if (finished) {
       vehicle.element.remove();
       vehicles.splice(i, 1);
+      score += 10;
+      scoreDisplay.textContent = score;
     }
+  }
+}
+
+function updateCongestion(delta) {
+  const waitingCars = vehicles.filter(vehicle => vehicle.waiting).length;
+  const extraTraffic = Math.max(0, vehicles.length - 8);
+  const target = Math.min(100, waitingCars * 12.5 + extraTraffic * 3);
+
+  const rate = target > congestion ? 42 : 24;
+  const difference = target - congestion;
+  congestion += Math.sign(difference) * Math.min(Math.abs(difference), rate * delta);
+  congestion = Math.max(0, Math.min(100, congestion));
+  maxCongestion = Math.max(maxCongestion, congestion);
+
+  const rounded = Math.round(congestion);
+  congestionText.textContent = `${rounded}%`;
+  congestionBar.style.width = `${rounded}%`;
+  congestionMeter.setAttribute('aria-valuenow', String(rounded));
+  congestionBar.classList.toggle('warning', rounded >= 55 && rounded < 80);
+  congestionBar.classList.toggle('danger', rounded >= 80);
+
+  if (congestion >= 99.5) {
+    overloadTime += delta;
+    if (overloadTime >= 0.8) endGame('lose');
+  } else {
+    overloadTime = Math.max(0, overloadTime - delta * 2);
   }
 }
 
@@ -187,8 +236,21 @@ function clearVehicles() {
   vehicles.splice(0).forEach(vehicle => vehicle.element.remove());
 }
 
+function resetStats() {
+  score = 0;
+  congestion = 0;
+  maxCongestion = 0;
+  overloadTime = 0;
+  scoreDisplay.textContent = '0';
+  congestionText.textContent = '0%';
+  congestionBar.style.width = '0%';
+  congestionBar.classList.remove('warning', 'danger');
+  congestionMeter.setAttribute('aria-valuenow', '0');
+}
+
 function startGame() {
   clearVehicles();
+  resetStats();
   greenDirection = 'horizontal';
   switching = false;
   switchBtn.disabled = false;
@@ -208,8 +270,33 @@ function startGame() {
 function stopGame() {
   running = false;
   switching = false;
+  switchBtn.disabled = false;
   clearVehicles();
   showScreen('menu');
+}
+
+function endGame(type) {
+  if (!running) return;
+
+  running = false;
+  switching = false;
+  switchBtn.disabled = true;
+
+  resultScore.textContent = score;
+  resultCongestion.textContent = `${Math.round(maxCongestion)}%`;
+
+  resultCard.classList.remove('win', 'lose');
+
+  if (type === 'lose') {
+    resultCard.classList.add('lose');
+    resultIcon.textContent = '⚠️';
+    resultEyebrow.textContent = 'Congestión crítica';
+    resultTitle.textContent = 'GAME OVER';
+    primaryResultBtn.textContent = 'REINTENTAR';
+    resultAction = startGame;
+  }
+
+  showScreen('result');
 }
 
 function gameLoop(now) {
@@ -220,11 +307,12 @@ function gameLoop(now) {
     spawnElapsed += delta;
     if (spawnElapsed >= nextSpawn) {
       spawnElapsed = 0;
-      nextSpawn = 1.2 + Math.random() * 1.4;
+      nextSpawn = 1.15 + Math.random() * 1.3;
       spawnVehicle();
     }
 
     updateVehicles(delta);
+    updateCongestion(delta);
   }
 
   requestAnimationFrame(gameLoop);
@@ -235,6 +323,9 @@ howBtn.addEventListener('click', () => showScreen('how'));
 howBackBtn.addEventListener('click', () => showScreen('menu'));
 menuBtn.addEventListener('click', stopGame);
 resultMenuBtn.addEventListener('click', stopGame);
+primaryResultBtn.addEventListener('click', () => {
+  if (resultAction) resultAction();
+});
 switchBtn.addEventListener('click', switchLights);
 
 window.addEventListener('keydown', event => {
