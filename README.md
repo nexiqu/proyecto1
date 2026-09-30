@@ -171,3 +171,70 @@ El juego ya cuenta con una versión funcional completa.
 ## Cómo probarlo
 
 La aplicación no necesita instalar librerías ni dependencias. Puede abrirse directamente con `index.html` o publicarse mediante **GitHub Pages** desde la rama `main`.
+
+
+---
+
+## Próxima mejora — Versión más dinámica
+
+La siguiente versión buscará que el juego se sienta más vivo, más natural y con una dificultad mayor.
+
+### Mejoras visuales
+
+- Calles con más detalle y mejor ambientación.
+- Edificios y zonas laterales más trabajadas.
+- Mayor variedad de vehículos.
+- Sombras, luces y animaciones más visibles.
+- Interfaz con un estilo más dinámico y parecido a un juego arcade.
+- Más retroalimentación visual cuando aumenta la congestión o cambia el estado del tráfico.
+
+### Flujo de vehículos más natural
+
+El movimiento de los carros será menos rígido y menos aleatorio.
+
+Se buscará implementar:
+
+- Aceleración y frenado gradual.
+- Diferentes velocidades entre vehículos.
+- Distancias de seguridad entre carros.
+- Filas que avancen progresivamente cuando cambia el semáforo.
+- Llegada de vehículos en pequeños grupos u oleadas.
+- Menos aparición completamente aleatoria.
+- Ajustes para evitar que los vehículos se superpongan.
+- Comportamiento distinto dependiendo de la cantidad de tráfico.
+
+### Sistema de colisiones
+
+Se agregará detección de choques entre vehículos.
+
+- Si dos vehículos colisionan dentro de una intersección, la partida termina.
+- Aparecerá una pantalla indicando que ocurrió un accidente.
+- El jugador podrá reiniciar el nivel.
+- Esto obligará a controlar los semáforos con más cuidado.
+
+### Nuevo Nivel 2 — Dos intersecciones
+
+El Nivel 2 dejará de tener una sola intersección.
+
+La nueva versión tendrá:
+
+- **Dos intersecciones conectadas entre sí.**
+- Más grupos de semáforos que controlar.
+- Vehículos desplazándose entre ambas intersecciones.
+- Mayor cantidad de tráfico.
+- Posibilidad de generar congestión entre una intersección y otra.
+- Mayor dificultad para coordinar el flujo vehicular.
+- Duración aproximada de **60 segundos**.
+
+El objetivo será coordinar ambas intersecciones sin provocar congestión crítica ni accidentes.
+
+### Nuevas condiciones de derrota
+
+En la versión mejorada será posible perder de dos formas:
+
+1. La congestión llega al **100 %**.
+2. Se produce una **colisión entre vehículos**.
+
+### Objetivo de esta mejora
+
+La intención de esta nueva etapa es pasar de una simulación sencilla de semáforos a un pequeño juego de gestión de tráfico en el que las decisiones del jugador tengan consecuencias más visibles y el movimiento de los vehículos se sienta más cercano a un flujo real.
