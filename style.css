@@ -711,3 +711,222 @@ kbd {
     animation-iteration-count: 1 !important;
   }
 }
+
+
+/* Selector de nivel */
+.level-picker {
+  margin: 0 auto 24px;
+  text-align: left;
+}
+
+.level-picker-title {
+  margin: 0 0 9px;
+  color: #8fa7bc;
+  font-size: .68rem;
+  font-weight: 900;
+  letter-spacing: .13em;
+  text-align: center;
+}
+
+.level-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.level-option {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 10px;
+  align-items: center;
+  padding: 13px;
+  border: 2px solid rgba(255,255,255,.08);
+  border-radius: 15px;
+  color: var(--text);
+  background: rgba(255,255,255,.045);
+  cursor: pointer;
+  text-align: left;
+  transition: transform .15s ease, border-color .15s ease, background .15s ease;
+}
+
+.level-option:hover {
+  transform: translateY(-2px);
+  border-color: rgba(117,183,255,.42);
+}
+
+.level-option.selected {
+  border-color: #39db76;
+  background: linear-gradient(150deg, rgba(43,211,113,.16), rgba(31,140,255,.08));
+  box-shadow: 0 0 0 1px rgba(57,219,118,.12), 0 8px 22px rgba(0,0,0,.18);
+}
+
+.level-number {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  color: #8fc7ff;
+  background: #102235;
+  font-weight: 950;
+}
+
+.level-option strong,
+.level-option small {
+  display: block;
+}
+
+.level-option strong {
+  font-size: .82rem;
+  line-height: 1.2;
+}
+
+.level-option small {
+  margin-top: 3px;
+  color: #9fb1c2;
+  font-size: .67rem;
+}
+
+.level-option b {
+  opacity: 0;
+  color: #39db76;
+  font-size: 1.1rem;
+}
+
+.level-option.selected b { opacity: 1; }
+
+/* Vehículos mejorados */
+.vehicle {
+  height: 3.45%;
+  min-height: 14px;
+  overflow: visible;
+  border-width: 1px;
+  border-color: rgba(0,0,0,.55);
+  border-radius: 35% 18% 18% 35%;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.25), transparent 38%),
+    linear-gradient(90deg, rgba(255,255,255,.12), transparent 22% 78%, rgba(0,0,0,.18)),
+    var(--car-color, #1e90ff);
+  box-shadow:
+    0 4px 7px rgba(0,0,0,.38),
+    inset 0 1px 1px rgba(255,255,255,.32),
+    inset 0 -2px 2px rgba(0,0,0,.16);
+}
+
+.vehicle::before {
+  content: none;
+}
+
+.vehicle::after {
+  left: 9%;
+  right: 8%;
+  bottom: -24%;
+  height: 4px;
+  background: rgba(0,0,0,.34);
+  filter: blur(1.5px);
+}
+
+.car-cabin {
+  position: absolute;
+  left: 31%;
+  top: 13%;
+  width: 38%;
+  height: 74%;
+  border-radius: 26% 30% 30% 26%;
+  border: 1px solid rgba(0,0,0,.28);
+  background:
+    linear-gradient(90deg, #9cd7e8 0 42%, #d7f2f5 43% 57%, #91c9dd 58%);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.22);
+}
+
+.car-wheel {
+  position: absolute;
+  width: 11%;
+  height: 30%;
+  border-radius: 45%;
+  background: #101419;
+  box-shadow: inset 0 0 0 1px #3a4148;
+}
+
+.wheel-front { right: 15%; top: -10%; }
+.wheel-back { left: 15%; top: -10%; }
+
+.vehicle .wheel-front::after,
+.vehicle .wheel-back::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 190%;
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  background: inherit;
+  box-shadow: inherit;
+}
+
+.car-light {
+  position: absolute;
+  top: 23%;
+  width: 4%;
+  height: 20%;
+  border-radius: 999px;
+}
+
+.headlight {
+  right: 1%;
+  background: #fff4a5;
+  box-shadow: 0 0 4px rgba(255,244,165,.8);
+}
+
+.taillight {
+  left: 1%;
+  background: #ff3535;
+  box-shadow: 0 0 3px rgba(255,53,53,.8);
+}
+
+.vehicle.braking .taillight {
+  height: 35%;
+  top: 15%;
+  box-shadow: 0 0 7px #ff2d2d;
+}
+
+.vehicle.suv {
+  width: 6.5%;
+  height: 3.8%;
+  border-radius: 24% 14% 14% 24%;
+}
+
+.vehicle.suv .car-cabin {
+  left: 28%;
+  width: 45%;
+}
+
+.vehicle.compact {
+  width: 5.15%;
+  border-radius: 42% 22% 22% 42%;
+}
+
+.vehicle.taxi {
+  --car-color: #f2c834 !important;
+}
+
+.vehicle.taxi .car-cabin::after {
+  content: "TAXI";
+  position: absolute;
+  left: 50%;
+  top: -55%;
+  transform: translateX(-50%);
+  padding: 1px 3px;
+  border-radius: 2px;
+  color: #101820;
+  background: #f4dd59;
+  font-size: clamp(4px, .65vw, 7px);
+  font-weight: 950;
+  line-height: 1;
+}
+
+@media (max-width: 700px) {
+  .level-options { grid-template-columns: 1fr; }
+  .vehicle { min-height: 11px; }
+}
