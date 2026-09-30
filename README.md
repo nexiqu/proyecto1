@@ -140,3 +140,34 @@ Menú → Nivel 1 → Victoria → Nivel 2 → Resultado final
 ## Orden de desarrollo
 
 La prioridad será desarrollar primero hasta la **Etapa 4** para obtener una demo funcional lo antes posible. Después se agregarán el sistema de congestión, la puntuación, los niveles y finalmente los detalles visuales.
+
+
+---
+
+## Estado actual del proyecto
+
+✅ **Etapa 1:** planificación y diseño  
+✅ **Etapa 2:** interfaz básica  
+✅ **Etapa 3:** sistema de semáforos  
+✅ **Etapa 4:** vehículos y movimiento  
+✅ **Etapa 5:** congestión y puntuación  
+✅ **Etapa 6:** dos niveles y cronómetro  
+✅ **Etapa 7:** menú, instrucciones, pantallas de resultado, animaciones y pulido final
+
+El juego ya cuenta con una versión funcional completa.
+
+## Archivos principales
+
+- `index.html`: estructura de las pantallas y de la intersección.
+- `style.css`: diseño visual, calles, carros, semáforos, interfaz y animaciones.
+- `script.js`: lógica de semáforos, vehículos, congestión, puntuación, niveles y temporizador.
+
+## Controles
+
+- **Botón CAMBIAR SEMÁFOROS:** alterna entre la vía horizontal y vertical.
+- **Barra espaciadora:** hace el mismo cambio desde el teclado.
+- **Menú:** permite abandonar la partida y volver a la pantalla principal.
+
+## Cómo probarlo
+
+La aplicación no necesita instalar librerías ni dependencias. Puede abrirse directamente con `index.html` o publicarse mediante **GitHub Pages** desde la rama `main`.
