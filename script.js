@@ -18,6 +18,9 @@ const scoreDisplay = document.getElementById('scoreDisplay');
 const congestionText = document.getElementById('congestionText');
 const congestionBar = document.getElementById('congestionBar');
 const congestionMeter = congestionBar.parentElement;
+const timeDisplay = document.getElementById('timeDisplay');
+const levelName = document.getElementById('levelName');
+const levelSubtitle = document.getElementById('levelSubtitle');
 const resultCard = document.getElementById('resultCard');
 const resultIcon = document.getElementById('resultIcon');
 const resultEyebrow = document.getElementById('resultEyebrow');
@@ -25,6 +28,26 @@ const resultTitle = document.getElementById('resultTitle');
 const resultScore = document.getElementById('resultScore');
 const resultCongestion = document.getElementById('resultCongestion');
 
+const levels = {
+  1: {
+    title: 'NIVEL 1',
+    subtitle: 'Tráfico normal',
+    duration: 45,
+    spawnMin: 1.15,
+    spawnMax: 1.85,
+    startingCars: ['east', 'west', 'south']
+  },
+  2: {
+    title: 'NIVEL 2',
+    subtitle: 'Hora pico',
+    duration: 60,
+    spawnMin: 0.58,
+    spawnMax: 1.05,
+    startingCars: ['east', 'west', 'south', 'north', 'east', 'south']
+  }
+};
+
+let currentLevel = 1;
 let greenDirection = 'horizontal';
 let switching = false;
 let running = false;
@@ -36,6 +59,7 @@ let score = 0;
 let congestion = 0;
 let maxCongestion = 0;
 let overloadTime = 0;
+let remainingTime = levels[1].duration;
 let resultAction = null;
 const vehicles = [];
 
@@ -51,6 +75,13 @@ const lanes = {
 function showScreen(name) {
   Object.values(screens).forEach(screen => screen.classList.remove('active'));
   screens[name].classList.add('active');
+}
+
+function formatTime(seconds) {
+  const safe = Math.max(0, Math.ceil(seconds));
+  const minutes = Math.floor(safe / 60);
+  const secs = safe % 60;
+  return `${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
 }
 
 function paintLights() {
@@ -100,12 +131,13 @@ function createVehicle(direction) {
   element.dataset.direction = direction;
   vehiclesLayer.appendChild(element);
 
+  const levelSpeedBoost = currentLevel === 2 ? 1.12 : 1;
   const vehicle = {
     id: ++vehicleId,
     direction,
     pos: lane.start,
     previousPos: lane.start,
-    speed: 8.5 + Math.random() * 2.2,
+    speed: (8.5 + Math.random() * 2.2) * levelSpeedBoost,
     committed: false,
     waiting: false,
     element
@@ -195,7 +227,7 @@ function updateVehicles(delta) {
 
 function updateCongestion(delta) {
   const waitingCars = vehicles.filter(vehicle => vehicle.waiting).length;
-  const extraTraffic = Math.max(0, vehicles.length - 8);
+  const extraTraffic = Math.max(0, vehicles.length - (currentLevel === 2 ? 9 : 8));
   const target = Math.min(100, waitingCars * 12.5 + extraTraffic * 3);
 
   const rate = target > congestion ? 42 : 24;
@@ -217,6 +249,22 @@ function updateCongestion(delta) {
   } else {
     overloadTime = Math.max(0, overloadTime - delta * 2);
   }
+}
+
+function updateTimer(delta) {
+  remainingTime -= delta;
+  timeDisplay.textContent = formatTime(remainingTime);
+
+  if (remainingTime <= 0) {
+    remainingTime = 0;
+    timeDisplay.textContent = '00:00';
+    endGame('win');
+  }
+}
+
+function scheduleNextSpawn() {
+  const config = levels[currentLevel];
+  nextSpawn = config.spawnMin + Math.random() * (config.spawnMax - config.spawnMin);
 }
 
 function spawnVehicle() {
@@ -248,9 +296,18 @@ function resetStats() {
   congestionMeter.setAttribute('aria-valuenow', '0');
 }
 
-function startGame() {
+function startLevel(levelNumber) {
+  currentLevel = levelNumber;
+  const config = levels[currentLevel];
+
   clearVehicles();
   resetStats();
+
+  levelName.textContent = config.title;
+  levelSubtitle.textContent = config.subtitle;
+  remainingTime = config.duration;
+  timeDisplay.textContent = formatTime(remainingTime);
+
   greenDirection = 'horizontal';
   switching = false;
   switchBtn.disabled = false;
@@ -259,12 +316,14 @@ function startGame() {
 
   running = true;
   spawnElapsed = 0;
-  nextSpawn = .8;
+  scheduleNextSpawn();
   lastFrame = performance.now();
 
-  createVehicle('east');
-  createVehicle('west');
-  createVehicle('south');
+  config.startingCars.forEach((direction, index) => {
+    window.setTimeout(() => {
+      if (running && currentLevel === levelNumber) createVehicle(direction);
+    }, index * 280);
+  });
 }
 
 function stopGame() {
@@ -284,16 +343,30 @@ function endGame(type) {
 
   resultScore.textContent = score;
   resultCongestion.textContent = `${Math.round(maxCongestion)}%`;
-
   resultCard.classList.remove('win', 'lose');
 
   if (type === 'lose') {
     resultCard.classList.add('lose');
     resultIcon.textContent = '⚠️';
-    resultEyebrow.textContent = 'Congestión crítica';
+    resultEyebrow.textContent = `Nivel ${currentLevel} · Congestión crítica`;
     resultTitle.textContent = 'GAME OVER';
     primaryResultBtn.textContent = 'REINTENTAR';
-    resultAction = startGame;
+    resultAction = () => startLevel(currentLevel);
+  } else {
+    resultCard.classList.add('win');
+    resultIcon.textContent = '🏆';
+
+    if (currentLevel === 1) {
+      resultEyebrow.textContent = 'Nivel 1 superado';
+      resultTitle.textContent = '¡NIVEL COMPLETADO!';
+      primaryResultBtn.textContent = 'SIGUIENTE NIVEL';
+      resultAction = () => startLevel(2);
+    } else {
+      resultEyebrow.textContent = 'Hora pico superada';
+      resultTitle.textContent = '¡TRÁFICO CONTROLADO!';
+      primaryResultBtn.textContent = 'JUGAR DE NUEVO';
+      resultAction = () => startLevel(1);
+    }
   }
 
   showScreen('result');
@@ -305,20 +378,23 @@ function gameLoop(now) {
 
   if (running) {
     spawnElapsed += delta;
+
     if (spawnElapsed >= nextSpawn) {
       spawnElapsed = 0;
-      nextSpawn = 1.15 + Math.random() * 1.3;
       spawnVehicle();
+      scheduleNextSpawn();
     }
 
     updateVehicles(delta);
     updateCongestion(delta);
+
+    if (running) updateTimer(delta);
   }
 
   requestAnimationFrame(gameLoop);
 }
 
-playBtn.addEventListener('click', startGame);
+playBtn.addEventListener('click', () => startLevel(1));
 howBtn.addEventListener('click', () => showScreen('how'));
 howBackBtn.addEventListener('click', () => showScreen('menu'));
 menuBtn.addEventListener('click', stopGame);
