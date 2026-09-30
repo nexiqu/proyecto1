@@ -935,3 +935,51 @@ kbd {
 /* Mantener orientación durante la animación de choque */
 .vehicle.crashed:not(.vertical) { --car-rotation: 0deg; }
 .vehicle.vertical.crashed { --car-rotation: 90deg; }
+
+
+/* Selector de nivel robusto con radio buttons */
+.level-picker {
+  padding: 0;
+  border: 0;
+}
+
+.level-option {
+  position: relative;
+}
+
+.level-option input[type="radio"] {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.level-option:has(input[type="radio"]:checked) {
+  border-color: #39db76;
+  background: linear-gradient(150deg, rgba(43,211,113,.16), rgba(31,140,255,.08));
+  box-shadow: 0 0 0 1px rgba(57,219,118,.12), 0 8px 22px rgba(0,0,0,.18);
+}
+
+.level-option:has(input[type="radio"]:checked) .level-check {
+  opacity: 1;
+}
+
+.level-option:has(input[type="radio"]:checked) .level-number {
+  color: #071a10;
+  background: #39db76;
+}
+
+.level-check {
+  opacity: 0;
+  color: #39db76;
+  font-size: 1.1rem;
+  font-weight: 900;
+}
+
+.level-option:focus-within {
+  outline: 3px solid rgba(255,255,255,.9);
+  outline-offset: 3px;
+}
+
+.level-copy {
+  min-width: 0;
+}
