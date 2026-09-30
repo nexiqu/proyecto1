@@ -12,7 +12,7 @@ const menuBtn = document.getElementById('menuBtn');
 const resultMenuBtn = document.getElementById('resultMenuBtn');
 const primaryResultBtn = document.getElementById('primaryResultBtn');
 
-const levelOptions = [...document.querySelectorAll('.level-option')];
+const levelInputs = [...document.querySelectorAll('input[name="level"]')];
 
 const switchA = document.getElementById('switchA');
 const switchB = document.getElementById('switchB');
@@ -70,7 +70,6 @@ const vehicleColors = [
   '#f05fa7', '#5cc85c'
 ];
 
-let selectedLevel = 1;
 let currentLevel = 1;
 let routes = {};
 let running = false;
@@ -813,15 +812,23 @@ function gameLoop(now) {
   requestAnimationFrame(gameLoop);
 }
 
-levelOptions.forEach(option => {
-  option.addEventListener('click', () => {
-    selectedLevel = Number(option.dataset.level);
-    levelOptions.forEach(item => item.classList.toggle('selected', item === option));
-    playBtn.textContent = `▶ JUGAR NIVEL ${selectedLevel}`;
-  });
+function getSelectedLevel() {
+  const checked = document.querySelector('input[name="level"]:checked');
+  return checked ? Number(checked.value) : 1;
+}
+
+function refreshLevelPicker() {
+  const selected = getSelectedLevel();
+  playBtn.textContent = `▶ JUGAR NIVEL ${selected}`;
+}
+
+levelInputs.forEach(input => {
+  input.addEventListener('change', refreshLevelPicker);
 });
 
-playBtn.addEventListener('click', () => startLevel(selectedLevel));
+playBtn.addEventListener('click', () => {
+  startLevel(getSelectedLevel());
+});
 howBtn.addEventListener('click', () => showScreen('how'));
 howBackBtn.addEventListener('click', () => showScreen('menu'));
 menuBtn.addEventListener('click', stopGame);
@@ -854,4 +861,5 @@ document.addEventListener('visibilitychange', () => {
 
 routes = makeRoutes(1);
 resetSignals();
+refreshLevelPicker();
 requestAnimationFrame(gameLoop);
