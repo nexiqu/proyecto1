@@ -14,6 +14,7 @@ const primaryResultBtn = document.getElementById('primaryResultBtn');
 const switchBtn = document.getElementById('switchBtn');
 const trafficState = document.getElementById('trafficState');
 const vehiclesLayer = document.getElementById('vehiclesLayer');
+const gameBoard = document.getElementById('gameBoard');
 const scoreDisplay = document.getElementById('scoreDisplay');
 const congestionText = document.getElementById('congestionText');
 const congestionBar = document.getElementById('congestionBar');
@@ -61,6 +62,7 @@ let maxCongestion = 0;
 let overloadTime = 0;
 let remainingTime = levels[1].duration;
 let resultAction = null;
+let gameToken = 0;
 const vehicles = [];
 
 const carColors = ['#1677ff', '#ff3b30', '#ffc928', '#20c997', '#ff8a34', '#8f6bff', '#f1f5f9'];
@@ -113,9 +115,11 @@ function switchLights() {
   switching = true;
   switchBtn.disabled = true;
   allRed();
+  const token = gameToken;
 
   window.setTimeout(() => {
-    if (!running) return;
+    if (!running || token !== gameToken) return;
+
     greenDirection = greenDirection === 'horizontal' ? 'vertical' : 'horizontal';
     paintLights();
     switching = false;
@@ -149,6 +153,7 @@ function createVehicle(direction) {
 
 function renderVehicle(vehicle) {
   const lane = lanes[vehicle.direction];
+
   if (lane.axis === 'x') {
     vehicle.element.style.left = `${vehicle.pos}%`;
     vehicle.element.style.top = `${lane.lane}%`;
@@ -164,18 +169,19 @@ function isGreenFor(vehicle) {
 
 function applyQueueSpacing(direction) {
   const lane = lanes[direction];
-  const sameLane = vehicles.filter(v => v.direction === direction);
+  const sameLane = vehicles.filter(vehicle => vehicle.direction === direction);
 
   sameLane.sort((a, b) => lane.sign > 0 ? b.pos - a.pos : a.pos - b.pos);
 
-  for (let i = 1; i < sameLane.length; i += 1) {
-    const ahead = sameLane[i - 1];
-    const behind = sameLane[i];
+  for (let index = 1; index < sameLane.length; index += 1) {
+    const ahead = sameLane[index - 1];
+    const behind = sameLane[index];
     const gap = 8.2;
 
     if (lane.sign > 0 && behind.pos > ahead.pos - gap) {
       behind.pos = ahead.pos - gap;
     }
+
     if (lane.sign < 0 && behind.pos < ahead.pos + gap) {
       behind.pos = ahead.pos + gap;
     }
@@ -199,8 +205,10 @@ function updateVehicles(delta) {
     }
 
     if (!vehicle.committed) {
-      if ((lane.sign > 0 && vehicle.pos > lane.stop + 2) ||
-          (lane.sign < 0 && vehicle.pos < lane.stop - 2)) {
+      if (
+        (lane.sign > 0 && vehicle.pos > lane.stop + 2) ||
+        (lane.sign < 0 && vehicle.pos < lane.stop - 2)
+      ) {
         vehicle.committed = true;
       }
     }
@@ -208,31 +216,46 @@ function updateVehicles(delta) {
 
   Object.keys(lanes).forEach(applyQueueSpacing);
 
-  for (let i = vehicles.length - 1; i >= 0; i -= 1) {
-    const vehicle = vehicles[i];
+  for (let index = vehicles.length - 1; index >= 0; index -= 1) {
+    const vehicle = vehicles[index];
     const lane = lanes[vehicle.direction];
 
-    vehicle.waiting = !vehicle.committed && Math.abs(vehicle.pos - vehicle.previousPos) < 0.025;
+    vehicle.waiting =
+      !vehicle.committed &&
+      Math.abs(vehicle.pos - vehicle.previousPos) < 0.025;
+
+    vehicle.element.classList.toggle('waiting', vehicle.waiting);
     renderVehicle(vehicle);
 
-    const finished = lane.sign > 0 ? vehicle.pos > lane.end : vehicle.pos < lane.end;
+    const finished =
+      lane.sign > 0 ? vehicle.pos > lane.end : vehicle.pos < lane.end;
+
     if (finished) {
       vehicle.element.remove();
-      vehicles.splice(i, 1);
+      vehicles.splice(index, 1);
       score += 10;
       scoreDisplay.textContent = score;
+      scoreDisplay.classList.remove('score-pop');
+      void scoreDisplay.offsetWidth;
+      scoreDisplay.classList.add('score-pop');
     }
   }
 }
 
 function updateCongestion(delta) {
   const waitingCars = vehicles.filter(vehicle => vehicle.waiting).length;
-  const extraTraffic = Math.max(0, vehicles.length - (currentLevel === 2 ? 9 : 8));
+  const freeTrafficLimit = currentLevel === 2 ? 9 : 8;
+  const extraTraffic = Math.max(0, vehicles.length - freeTrafficLimit);
   const target = Math.min(100, waitingCars * 12.5 + extraTraffic * 3);
 
   const rate = target > congestion ? 42 : 24;
   const difference = target - congestion;
-  congestion += Math.sign(difference) * Math.min(Math.abs(difference), rate * delta);
+
+  if (Math.abs(difference) > 0.01) {
+    congestion +=
+      Math.sign(difference) * Math.min(Math.abs(difference), rate * delta);
+  }
+
   congestion = Math.max(0, Math.min(100, congestion));
   maxCongestion = Math.max(maxCongestion, congestion);
 
@@ -242,6 +265,7 @@ function updateCongestion(delta) {
   congestionMeter.setAttribute('aria-valuenow', String(rounded));
   congestionBar.classList.toggle('warning', rounded >= 55 && rounded < 80);
   congestionBar.classList.toggle('danger', rounded >= 80);
+  gameBoard.classList.toggle('critical', rounded >= 80);
 
   if (congestion >= 99.5) {
     overloadTime += delta;
@@ -254,6 +278,7 @@ function updateCongestion(delta) {
 function updateTimer(delta) {
   remainingTime -= delta;
   timeDisplay.textContent = formatTime(remainingTime);
+  timeDisplay.classList.toggle('urgent', remainingTime <= 10);
 
   if (remainingTime <= 0) {
     remainingTime = 0;
@@ -264,17 +289,22 @@ function updateTimer(delta) {
 
 function scheduleNextSpawn() {
   const config = levels[currentLevel];
-  nextSpawn = config.spawnMin + Math.random() * (config.spawnMax - config.spawnMin);
+  nextSpawn =
+    config.spawnMin + Math.random() * (config.spawnMax - config.spawnMin);
 }
 
 function spawnVehicle() {
   const directions = Object.keys(lanes);
   const direction = directions[Math.floor(Math.random() * directions.length)];
-
-  const sameDirection = vehicles.filter(v => v.direction === direction);
+  const sameDirection = vehicles.filter(
+    vehicle => vehicle.direction === direction
+  );
   const lane = lanes[direction];
-  const blockedAtSpawn = sameDirection.some(v =>
-    lane.sign > 0 ? v.pos < lane.start + 10 : v.pos > lane.start - 10
+
+  const blockedAtSpawn = sameDirection.some(vehicle =>
+    lane.sign > 0
+      ? vehicle.pos < lane.start + 10
+      : vehicle.pos > lane.start - 10
   );
 
   if (!blockedAtSpawn) createVehicle(direction);
@@ -289,14 +319,20 @@ function resetStats() {
   congestion = 0;
   maxCongestion = 0;
   overloadTime = 0;
+
   scoreDisplay.textContent = '0';
+  scoreDisplay.classList.remove('score-pop');
   congestionText.textContent = '0%';
   congestionBar.style.width = '0%';
   congestionBar.classList.remove('warning', 'danger');
   congestionMeter.setAttribute('aria-valuenow', '0');
+  timeDisplay.classList.remove('urgent');
+  gameBoard.classList.remove('critical');
 }
 
 function startLevel(levelNumber) {
+  gameToken += 1;
+  const token = gameToken;
   currentLevel = levelNumber;
   const config = levels[currentLevel];
 
@@ -307,6 +343,7 @@ function startLevel(levelNumber) {
   levelSubtitle.textContent = config.subtitle;
   remainingTime = config.duration;
   timeDisplay.textContent = formatTime(remainingTime);
+  gameBoard.classList.toggle('rush-hour', currentLevel === 2);
 
   greenDirection = 'horizontal';
   switching = false;
@@ -321,22 +358,26 @@ function startLevel(levelNumber) {
 
   config.startingCars.forEach((direction, index) => {
     window.setTimeout(() => {
-      if (running && currentLevel === levelNumber) createVehicle(direction);
+      if (running && token === gameToken) createVehicle(direction);
     }, index * 280);
   });
 }
 
 function stopGame() {
+  gameToken += 1;
   running = false;
   switching = false;
   switchBtn.disabled = false;
   clearVehicles();
+  gameBoard.classList.remove('critical', 'rush-hour');
+  timeDisplay.classList.remove('urgent');
   showScreen('menu');
 }
 
 function endGame(type) {
   if (!running) return;
 
+  gameToken += 1;
   running = false;
   switching = false;
   switchBtn.disabled = true;
@@ -405,10 +446,18 @@ primaryResultBtn.addEventListener('click', () => {
 switchBtn.addEventListener('click', switchLights);
 
 window.addEventListener('keydown', event => {
-  if (event.code === 'Space' && screens.game.classList.contains('active')) {
+  if (
+    event.code === 'Space' &&
+    screens.game.classList.contains('active') &&
+    !event.repeat
+  ) {
     event.preventDefault();
     switchLights();
   }
+});
+
+document.addEventListener('visibilitychange', () => {
+  lastFrame = performance.now();
 });
 
 paintLights();
