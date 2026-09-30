@@ -175,9 +175,9 @@ La aplicación no necesita instalar librerías ni dependencias. Puede abrirse di
 
 ---
 
-## Próxima mejora — Versión más dinámica
+## Mejoras implementadas — Versión más dinámica
 
-La siguiente versión buscará que el juego se sienta más vivo, más natural y con una dificultad mayor.
+Esta versión incorpora una simulación más viva, un flujo vehicular más natural y una dificultad mayor.
 
 ### Mejoras visuales
 
@@ -192,7 +192,7 @@ La siguiente versión buscará que el juego se sienta más vivo, más natural y 
 
 El movimiento de los carros será menos rígido y menos aleatorio.
 
-Se buscará implementar:
+Se implementó:
 
 - Aceleración y frenado gradual.
 - Diferentes velocidades entre vehículos.
@@ -205,7 +205,7 @@ Se buscará implementar:
 
 ### Sistema de colisiones
 
-Se agregará detección de choques entre vehículos.
+Se agregó detección de choques entre vehículos.
 
 - Si dos vehículos colisionan dentro de una intersección, la partida termina.
 - Aparecerá una pantalla indicando que ocurrió un accidente.
@@ -214,9 +214,9 @@ Se agregará detección de choques entre vehículos.
 
 ### Nuevo Nivel 2 — Dos intersecciones
 
-El Nivel 2 dejará de tener una sola intersección.
+El Nivel 2 ahora utiliza dos intersecciones conectadas.
 
-La nueva versión tendrá:
+La versión actual incluye:
 
 - **Dos intersecciones conectadas entre sí.**
 - Más grupos de semáforos que controlar.
@@ -230,11 +230,25 @@ El objetivo será coordinar ambas intersecciones sin provocar congestión críti
 
 ### Nuevas condiciones de derrota
 
-En la versión mejorada será posible perder de dos formas:
+Actualmente es posible perder de dos formas:
 
 1. La congestión llega al **100 %**.
 2. Se produce una **colisión entre vehículos**.
 
 ### Objetivo de esta mejora
 
-La intención de esta nueva etapa es pasar de una simulación sencilla de semáforos a un pequeño juego de gestión de tráfico en el que las decisiones del jugador tengan consecuencias más visibles y el movimiento de los vehículos se sienta más cercano a un flujo real.
+Con esta etapa, el proyecto pasa de una simulación sencilla de semáforos a un pequeño juego de gestión de tráfico en el que las decisiones del jugador tienen consecuencias visibles y el movimiento de los vehículos se siente más cercano a un flujo real.
+
+
+### Implementación completada
+
+✅ Gráficos y ambientación renovados.  
+✅ Aceleración y frenado progresivos.  
+✅ Distancia de seguridad entre vehículos.  
+✅ Tráfico en pequeños grupos y oleadas.  
+✅ Velocidades distintas entre carros.  
+✅ Detección de colisiones con fin de partida.  
+✅ Nivel 2 con dos intersecciones independientes.  
+✅ Vehículos de la avenida principal obedecen ambos cruces.  
+✅ Posibilidad de congestión entre las dos intersecciones.  
+✅ Controles separados para Cruce A y Cruce B.
