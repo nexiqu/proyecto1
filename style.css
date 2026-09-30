@@ -930,3 +930,8 @@ kbd {
   .level-options { grid-template-columns: 1fr; }
   .vehicle { min-height: 11px; }
 }
+
+
+/* Mantener orientación durante la animación de choque */
+.vehicle.crashed:not(.vertical) { --car-rotation: 0deg; }
+.vehicle.vertical.crashed { --car-rotation: 90deg; }
