@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Control de Tráfico</title>
+  <meta name="description" content="Juego de control de semáforos y congestión vehicular." />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <main class="app-shell">
+    <section id="menuScreen" class="screen menu-screen active" aria-labelledby="gameTitle">
+      <div class="menu-card">
+        <div class="brand-mark" aria-hidden="true">
+          <span class="bulb red"></span><span class="bulb yellow"></span><span class="bulb green"></span>
+        </div>
+        <p class="eyebrow">Taller de Computación</p>
+        <h1 id="gameTitle">CONTROL DE <span>TRÁFICO</span></h1>
+        <p class="menu-copy">Mantén la ciudad en movimiento controlando los semáforos durante la hora pico.</p>
+        <div class="menu-actions">
+          <button id="playBtn" class="btn btn-primary">▶ JUGAR</button>
+          <button id="howBtn" class="btn btn-secondary">CÓMO JUGAR</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="howScreen" class="screen how-screen" aria-labelledby="howTitle">
+      <div class="panel instructions-panel">
+        <p class="eyebrow">Instrucciones</p>
+        <h2 id="howTitle">CÓMO JUGAR</h2>
+        <div class="instruction-grid">
+          <article><span class="instruction-icon">🚦</span><div><strong>1. Controla</strong><p>Cambia qué vía tiene luz verde.</p></div></article>
+          <article><span class="instruction-icon">🚗</span><div><strong>2. Observa</strong><p>Los vehículos se detienen en rojo.</p></div></article>
+          <article><span class="instruction-icon">📊</span><div><strong>3. Evita congestión</strong><p>No dejes que el medidor llegue al 100%.</p></div></article>
+          <article><span class="instruction-icon">🏆</span><div><strong>4. Resiste</strong><p>Completa el tiempo de cada nivel.</p></div></article>
+        </div>
+        <p class="keyboard-tip">Tip: también puedes usar la tecla <kbd>Espacio</kbd>.</p>
+        <button id="howBackBtn" class="btn btn-primary">VOLVER</button>
+      </div>
+    </section>
+
+    <section id="gameScreen" class="screen game-screen" aria-label="Partida">
+      <header class="hud">
+        <div class="hud-block">
+          <span id="levelName" class="hud-label">NIVEL 1</span>
+          <strong id="levelSubtitle">Tráfico normal</strong>
+        </div>
+        <div class="hud-block hud-center">
+          <span class="hud-label">TIEMPO</span>
+          <strong id="timeDisplay">00:45</strong>
+        </div>
+        <div class="hud-block hud-score">
+          <span class="hud-label">PUNTUACIÓN</span>
+          <strong id="scoreDisplay">0</strong>
+        </div>
+      </header>
+
+      <div id="gameBoard" class="game-board">
+        <div class="city city-nw"></div><div class="city city-ne"></div>
+        <div class="city city-sw"></div><div class="city city-se"></div>
+
+        <div class="road road-horizontal">
+          <span class="lane-line lane-h h1"></span><span class="lane-line lane-h h2"></span>
+        </div>
+        <div class="road road-vertical">
+          <span class="lane-line lane-v v1"></span><span class="lane-line lane-v v2"></span>
+        </div>
+        <div class="intersection"></div>
+
+        <div class="crosswalk crosswalk-top"></div><div class="crosswalk crosswalk-bottom"></div>
+        <div class="crosswalk crosswalk-left"></div><div class="crosswalk crosswalk-right"></div>
+
+        <div id="vehiclesLayer" class="vehicles-layer" aria-hidden="true"></div>
+
+        <div class="traffic-light light-west horizontal-light" data-group="horizontal">
+          <span class="lamp lamp-red"></span><span class="lamp lamp-green"></span>
+        </div>
+        <div class="traffic-light light-east horizontal-light" data-group="horizontal">
+          <span class="lamp lamp-red"></span><span class="lamp lamp-green"></span>
+        </div>
+        <div class="traffic-light light-north vertical-light" data-group="vertical">
+          <span class="lamp lamp-red"></span><span class="lamp lamp-green"></span>
+        </div>
+        <div class="traffic-light light-south vertical-light" data-group="vertical">
+          <span class="lamp lamp-red"></span><span class="lamp lamp-green"></span>
+        </div>
+
+        <button id="switchBtn" class="switch-btn" aria-label="Cambiar semáforos">
+          <span class="switch-icon">↻</span> CAMBIAR SEMÁFOROS
+        </button>
+      </div>
+
+      <footer class="status-panel">
+        <div class="congestion-header">
+          <span>Congestión</span><strong id="congestionText">0%</strong>
+        </div>
+        <div class="meter" role="progressbar" aria-label="Congestión" aria-valuemin="0" aria-valuemax="100">
+          <div id="congestionBar" class="meter-fill"></div>
+        </div>
+        <div class="status-row">
+          <span id="trafficState">Horizontal en verde</span>
+          <button id="menuBtn" class="text-btn">Menú</button>
+        </div>
+      </footer>
+    </section>
+
+    <section id="resultScreen" class="screen result-screen" aria-live="polite">
+      <div id="resultCard" class="panel result-card">
+        <div id="resultIcon" class="result-icon">🏆</div>
+        <p id="resultEyebrow" class="eyebrow">Resultado</p>
+        <h2 id="resultTitle">¡NIVEL COMPLETADO!</h2>
+        <div class="result-stats">
+          <p><span>Puntuación</span><strong id="resultScore">0</strong></p>
+          <p><span>Congestión máxima</span><strong id="resultCongestion">0%</strong></p>
+        </div>
+        <button id="primaryResultBtn" class="btn btn-primary">SIGUIENTE NIVEL</button>
+        <button id="resultMenuBtn" class="btn btn-secondary">MENÚ PRINCIPAL</button>
+      </div>
+    </section>
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>
