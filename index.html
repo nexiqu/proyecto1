@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Control de Tráfico</title>
   <meta name="description" content="Juego de gestión de tráfico y semáforos." />
-  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="style.css?v=20260930-2" />
 </head>
 <body>
   <main class="app-shell">
@@ -29,7 +29,7 @@
         <fieldset class="level-picker">
           <legend class="level-picker-title">SELECCIONA EL NIVEL</legend>
           <div class="level-options">
-            <label class="level-option">
+            <label class="level-option" data-level="1">
               <input type="radio" name="level" value="1" checked />
               <span class="level-number">01</span>
               <span class="level-copy">
@@ -38,7 +38,7 @@
               </span>
               <span class="level-check">✓</span>
             </label>
-            <label class="level-option">
+            <label class="level-option" data-level="2">
               <input type="radio" name="level" value="2" />
               <span class="level-number">02</span>
               <span class="level-copy">
@@ -180,6 +180,6 @@
     </section>
   </main>
 
-  <script src="script.js"></script>
+  <script src="script.js?v=20260930-2"></script>
 </body>
 </html>
