@@ -522,7 +522,7 @@ function updateCongestion(delta) {
     100
   );
 
-  const changeRate = target > congestion ? 15 : 20;
+  const changeRate = target > congestion ? 19 : 20;
   const difference = target - congestion;
 
   if (Math.abs(difference) > 0.02) {
@@ -557,7 +557,7 @@ function updateCongestion(delta) {
   if (congestion >= 99.5) {
     overloadTime += delta;
 
-    if (overloadTime >= 1.1) {
+    if (overloadTime >= 1.0) {
       running = false;
       showResult('congestion');
     }
