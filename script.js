@@ -817,17 +817,40 @@ function getSelectedLevel() {
   return checked ? Number(checked.value) : 1;
 }
 
-function refreshLevelPicker() {
-  const selected = getSelectedLevel();
-  playBtn.textContent = `▶ JUGAR NIVEL ${selected}`;
+function setSelectedLevel(level) {
+  const value = String(level);
+  const input = document.querySelector(`input[name="level"][value="${value}"]`);
+
+  if (!input) return;
+
+  input.checked = true;
+  playBtn.dataset.level = value;
+  playBtn.textContent = `▶ JUGAR NIVEL ${value}`;
 }
 
+function refreshLevelPicker() {
+  setSelectedLevel(getSelectedLevel());
+}
+
+document.querySelectorAll('.level-option').forEach(option => {
+  option.addEventListener('click', () => {
+    setSelectedLevel(Number(option.dataset.level));
+  });
+});
+
 levelInputs.forEach(input => {
-  input.addEventListener('change', refreshLevelPicker);
+  input.addEventListener('input', () => {
+    setSelectedLevel(Number(input.value));
+  });
+
+  input.addEventListener('change', () => {
+    setSelectedLevel(Number(input.value));
+  });
 });
 
 playBtn.addEventListener('click', () => {
-  startLevel(getSelectedLevel());
+  const level = Number(playBtn.dataset.level || getSelectedLevel());
+  startLevel(level);
 });
 howBtn.addEventListener('click', () => showScreen('how'));
 howBackBtn.addEventListener('click', () => showScreen('menu'));
@@ -861,5 +884,5 @@ document.addEventListener('visibilitychange', () => {
 
 routes = makeRoutes(1);
 resetSignals();
-refreshLevelPicker();
+setSelectedLevel(getSelectedLevel());
 requestAnimationFrame(gameLoop);
