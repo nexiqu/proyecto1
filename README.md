@@ -252,3 +252,10 @@ Con esta etapa, el proyecto pasa de una simulación sencilla de semáforos a un 
 ✅ Vehículos de la avenida principal obedecen ambos cruces.  
 ✅ Posibilidad de congestión entre las dos intersecciones.  
 ✅ Controles separados para Cruce A y Cruce B.
+
+
+### Ajustes recientes de jugabilidad
+
+- Selector de **Nivel 1** o **Nivel 2** desde el menú principal.
+- La congestión aumenta de forma más gradual para dar más tiempo de reacción.
+- Vehículos rediseñados con diferentes carrocerías, ventanas, ruedas, luces y taxis.
