@@ -11,68 +11,100 @@ const howBackBtn = document.getElementById('howBackBtn');
 const menuBtn = document.getElementById('menuBtn');
 const resultMenuBtn = document.getElementById('resultMenuBtn');
 const primaryResultBtn = document.getElementById('primaryResultBtn');
-const switchBtn = document.getElementById('switchBtn');
-const trafficState = document.getElementById('trafficState');
-const vehiclesLayer = document.getElementById('vehiclesLayer');
+
+const switchA = document.getElementById('switchA');
+const switchB = document.getElementById('switchB');
+const stateA = document.getElementById('stateA');
+const stateB = document.getElementById('stateB');
+
+const gameScreen = document.getElementById('gameScreen');
 const gameBoard = document.getElementById('gameBoard');
+const vehiclesLayer = document.getElementById('vehiclesLayer');
+const crashFlash = document.getElementById('crashFlash');
+
+const levelName = document.getElementById('levelName');
+const levelSubtitle = document.getElementById('levelSubtitle');
+const timeDisplay = document.getElementById('timeDisplay');
 const scoreDisplay = document.getElementById('scoreDisplay');
+const trafficState = document.getElementById('trafficState');
+const carsCount = document.getElementById('carsCount');
+
 const congestionText = document.getElementById('congestionText');
 const congestionBar = document.getElementById('congestionBar');
 const congestionMeter = congestionBar.parentElement;
-const timeDisplay = document.getElementById('timeDisplay');
-const levelName = document.getElementById('levelName');
-const levelSubtitle = document.getElementById('levelSubtitle');
+
 const resultCard = document.getElementById('resultCard');
 const resultIcon = document.getElementById('resultIcon');
 const resultEyebrow = document.getElementById('resultEyebrow');
 const resultTitle = document.getElementById('resultTitle');
+const resultMessage = document.getElementById('resultMessage');
 const resultScore = document.getElementById('resultScore');
 const resultCongestion = document.getElementById('resultCongestion');
 
 const levels = {
   1: {
     title: 'NIVEL 1',
-    subtitle: 'Tráfico normal',
+    subtitle: 'Intersección central',
     duration: 45,
-    spawnMin: 1.15,
-    spawnMax: 1.85,
-    startingCars: ['east', 'west', 'south']
+    spawnMin: 0.95,
+    spawnMax: 1.7,
+    waveChance: 0.32,
+    maxTrafficBeforePenalty: 10
   },
   2: {
     title: 'NIVEL 2',
-    subtitle: 'Hora pico',
+    subtitle: 'Dos cruces · Hora pico',
     duration: 60,
-    spawnMin: 0.58,
-    spawnMax: 1.05,
-    startingCars: ['east', 'west', 'south', 'north', 'east', 'south']
+    spawnMin: 0.62,
+    spawnMax: 1.08,
+    waveChance: 0.46,
+    maxTrafficBeforePenalty: 17
   }
 };
 
+const vehicleColors = [
+  '#1d86ff', '#ff493d', '#ffd23d', '#2bd384',
+  '#ff8d3a', '#966cff', '#e8edf2', '#28b9cc',
+  '#f05fa7', '#5cc85c'
+];
+
 let currentLevel = 1;
-let greenDirection = 'horizontal';
-let switching = false;
+let routes = {};
 let running = false;
+let crashPending = false;
 let lastFrame = performance.now();
-let spawnElapsed = 0;
-let nextSpawn = 1.5;
-let vehicleId = 0;
+let remainingTime = levels[1].duration;
 let score = 0;
 let congestion = 0;
 let maxCongestion = 0;
 let overloadTime = 0;
-let remainingTime = levels[1].duration;
-let resultAction = null;
+let spawnElapsed = 0;
+let nextSpawn = 1;
+let waveRemaining = 0;
+let waveAxis = 'horizontal';
+let vehicleId = 0;
 let gameToken = 0;
+let resultAction = null;
+
 const vehicles = [];
 
-const carColors = ['#1677ff', '#ff3b30', '#ffc928', '#20c997', '#ff8a34', '#8f6bff', '#f1f5f9'];
-
-const lanes = {
-  east:  { axis: 'x', group: 'horizontal', lane: 40.5, start: -9,  stop: 23, end: 108, sign:  1, vertical: false },
-  west:  { axis: 'x', group: 'horizontal', lane: 56.0, start: 102, stop: 70, end: -10, sign: -1, vertical: false },
-  south: { axis: 'y', group: 'vertical',   lane: 56.0, start: -9,  stop: 23, end: 108, sign:  1, vertical: true  },
-  north: { axis: 'y', group: 'vertical',   lane: 40.5, start: 102, stop: 70, end: -10, sign: -1, vertical: true  }
+const signalStates = {
+  A: 'horizontal',
+  B: 'horizontal'
 };
+
+const signalSwitching = {
+  A: false,
+  B: false
+};
+
+function clamp(value, min, max) {
+  return Math.max(min, Math.min(max, value));
+}
+
+function randomBetween(min, max) {
+  return min + Math.random() * (max - min);
+}
 
 function showScreen(name) {
   Object.values(screens).forEach(screen => screen.classList.remove('active'));
@@ -86,104 +118,262 @@ function formatTime(seconds) {
   return `${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
 }
 
-function paintLights() {
-  document.querySelectorAll('.horizontal-light').forEach(light => {
-    light.classList.toggle('green', greenDirection === 'horizontal');
-    light.classList.toggle('red', greenDirection !== 'horizontal');
-  });
+function makeRoutes(level) {
+  if (level === 1) {
+    return {
+      E: {
+        key: 'E', axis: 'x', orientation: 'horizontal', sign: 1,
+        fixed: 45.2, start: -8, end: 108,
+        checkpoints: [{ id: 'A', stop: 34 }]
+      },
+      W: {
+        key: 'W', axis: 'x', orientation: 'horizontal', sign: -1,
+        fixed: 52.4, start: 108, end: -8,
+        checkpoints: [{ id: 'A', stop: 66 }]
+      },
+      S: {
+        key: 'S', axis: 'y', orientation: 'vertical', sign: 1,
+        fixed: 52.2, start: -8, end: 108,
+        checkpoints: [{ id: 'A', stop: 34 }]
+      },
+      N: {
+        key: 'N', axis: 'y', orientation: 'vertical', sign: -1,
+        fixed: 45.3, start: 108, end: -8,
+        checkpoints: [{ id: 'A', stop: 66 }]
+      }
+    };
+  }
 
-  document.querySelectorAll('.vertical-light').forEach(light => {
-    light.classList.toggle('green', greenDirection === 'vertical');
-    light.classList.toggle('red', greenDirection !== 'vertical');
-  });
-
-  trafficState.textContent =
-    greenDirection === 'horizontal' ? 'Horizontal en verde' : 'Vertical en verde';
+  return {
+    E: {
+      key: 'E', axis: 'x', orientation: 'horizontal', sign: 1,
+      fixed: 45.2, start: -8, end: 108,
+      checkpoints: [
+        { id: 'A', stop: 22.5 },
+        { id: 'B', stop: 58.5 }
+      ]
+    },
+    W: {
+      key: 'W', axis: 'x', orientation: 'horizontal', sign: -1,
+      fixed: 52.5, start: 108, end: -8,
+      checkpoints: [
+        { id: 'B', stop: 77.5 },
+        { id: 'A', stop: 41.5 }
+      ]
+    },
+    AS: {
+      key: 'AS', axis: 'y', orientation: 'vertical', sign: 1,
+      fixed: 34.3, start: -8, end: 108,
+      checkpoints: [{ id: 'A', stop: 37.5 }]
+    },
+    AN: {
+      key: 'AN', axis: 'y', orientation: 'vertical', sign: -1,
+      fixed: 28.5, start: 108, end: -8,
+      checkpoints: [{ id: 'A', stop: 62.5 }]
+    },
+    BS: {
+      key: 'BS', axis: 'y', orientation: 'vertical', sign: 1,
+      fixed: 70.3, start: -8, end: 108,
+      checkpoints: [{ id: 'B', stop: 37.5 }]
+    },
+    BN: {
+      key: 'BN', axis: 'y', orientation: 'vertical', sign: -1,
+      fixed: 64.5, start: 108, end: -8,
+      checkpoints: [{ id: 'B', stop: 62.5 }]
+    }
+  };
 }
 
-function allRed() {
-  document.querySelectorAll('.traffic-light').forEach(light => {
-    light.classList.remove('green');
-    light.classList.add('red');
+function paintSignals() {
+  document.querySelectorAll('.signal-pair').forEach(signal => {
+    const id = signal.dataset.intersection;
+    const group = signal.dataset.group;
+    const isGreen = !signalSwitching[id] && signalStates[id] === group;
+
+    signal.classList.toggle('green', isGreen);
+    signal.classList.toggle('red', !isGreen);
   });
-  trafficState.textContent = 'Cambio de fase…';
+
+  updateControlState('A', switchA, stateA);
+  updateControlState('B', switchB, stateB);
 }
 
-function switchLights() {
-  if (switching || !running) return;
+function updateControlState(id, button, label) {
+  if (signalSwitching[id]) {
+    button.classList.add('switching');
+    button.disabled = true;
+    label.textContent = 'Cambio de fase…';
+    return;
+  }
 
-  switching = true;
-  switchBtn.disabled = true;
-  allRed();
+  button.classList.remove('switching');
+  button.disabled = !running;
+  label.textContent =
+    signalStates[id] === 'horizontal' ? 'Horizontal verde' : 'Vertical verde';
+}
+
+function switchIntersection(id) {
+  if (!running || signalSwitching[id]) return;
+  if (id === 'B' && currentLevel !== 2) return;
+
+  signalSwitching[id] = true;
+  paintSignals();
   const token = gameToken;
 
   window.setTimeout(() => {
     if (!running || token !== gameToken) return;
 
-    greenDirection = greenDirection === 'horizontal' ? 'vertical' : 'horizontal';
-    paintLights();
-    switching = false;
-    switchBtn.disabled = false;
-  }, 350);
+    signalStates[id] =
+      signalStates[id] === 'horizontal' ? 'vertical' : 'horizontal';
+
+    signalSwitching[id] = false;
+    paintSignals();
+  }, 240);
 }
 
-function createVehicle(direction) {
-  const lane = lanes[direction];
+function isSignalGreen(checkpoint, vehicle) {
+  return (
+    !signalSwitching[checkpoint.id] &&
+    signalStates[checkpoint.id] === vehicle.route.orientation
+  );
+}
+
+function createVehicle(routeKey) {
+  const route = routes[routeKey];
+  if (!route) return false;
+
+  const tooCloseToSpawn = vehicles.some(vehicle => {
+    if (vehicle.route.key !== routeKey) return false;
+    const distance = route.sign * (vehicle.pos - route.start);
+    return distance >= -1 && distance < 10;
+  });
+
+  if (tooCloseToSpawn) return false;
+
   const element = document.createElement('div');
-  element.className = `vehicle${lane.vertical ? ' vertical' : ''}`;
-  element.style.setProperty('--car-color', carColors[Math.floor(Math.random() * carColors.length)]);
-  element.dataset.direction = direction;
+  element.className = `vehicle${route.orientation === 'vertical' ? ' vertical' : ''}`;
+  element.style.setProperty(
+    '--car-color',
+    vehicleColors[Math.floor(Math.random() * vehicleColors.length)]
+  );
   vehiclesLayer.appendChild(element);
 
-  const levelSpeedBoost = currentLevel === 2 ? 1.12 : 1;
+  const levelBoost = currentLevel === 2 ? 1.06 : 1;
+  const cruiseSpeed = randomBetween(8.4, 11.8) * levelBoost;
+
   const vehicle = {
     id: ++vehicleId,
-    direction,
-    pos: lane.start,
-    previousPos: lane.start,
-    speed: (8.5 + Math.random() * 2.2) * levelSpeedBoost,
-    committed: false,
+    route,
+    pos: route.start,
+    previousPos: route.start,
+    speed: randomBetween(1.2, 3.5),
+    cruiseSpeed,
+    acceleration: randomBetween(3.0, 4.7),
+    braking: randomBetween(8.5, 12.5),
+    length: 5.9,
     waiting: false,
+    targetSpeed: cruiseSpeed,
     element
   };
 
   vehicles.push(vehicle);
   renderVehicle(vehicle);
+  return true;
 }
 
 function renderVehicle(vehicle) {
-  const lane = lanes[vehicle.direction];
-
-  if (lane.axis === 'x') {
+  if (vehicle.route.axis === 'x') {
     vehicle.element.style.left = `${vehicle.pos}%`;
-    vehicle.element.style.top = `${lane.lane}%`;
+    vehicle.element.style.top = `${vehicle.route.fixed}%`;
   } else {
-    vehicle.element.style.left = `${lane.lane}%`;
+    vehicle.element.style.left = `${vehicle.route.fixed}%`;
     vehicle.element.style.top = `${vehicle.pos}%`;
   }
 }
 
-function isGreenFor(vehicle) {
-  return lanes[vehicle.direction].group === greenDirection && !switching;
+function distanceToNextRed(vehicle) {
+  let nearest = Infinity;
+
+  for (const checkpoint of vehicle.route.checkpoints) {
+    const distance = vehicle.route.sign * (checkpoint.stop - vehicle.pos);
+
+    if (distance < -0.5) continue;
+    if (isSignalGreen(checkpoint, vehicle)) continue;
+
+    nearest = Math.min(nearest, Math.max(0, distance));
+  }
+
+  return nearest;
 }
 
-function applyQueueSpacing(direction) {
-  const lane = lanes[direction];
-  const sameLane = vehicles.filter(vehicle => vehicle.direction === direction);
+function vehicleAhead(vehicle) {
+  let nearestVehicle = null;
+  let nearestGap = Infinity;
 
-  sameLane.sort((a, b) => lane.sign > 0 ? b.pos - a.pos : a.pos - b.pos);
+  for (const other of vehicles) {
+    if (other.id === vehicle.id) continue;
+    if (other.route.key !== vehicle.route.key) continue;
 
-  for (let index = 1; index < sameLane.length; index += 1) {
-    const ahead = sameLane[index - 1];
-    const behind = sameLane[index];
-    const gap = 8.2;
+    const rawDistance =
+      vehicle.route.sign * (other.pos - vehicle.pos);
 
-    if (lane.sign > 0 && behind.pos > ahead.pos - gap) {
-      behind.pos = ahead.pos - gap;
+    if (rawDistance <= 0) continue;
+
+    const gap = rawDistance - vehicle.length;
+
+    if (gap < nearestGap) {
+      nearestGap = gap;
+      nearestVehicle = other;
     }
+  }
 
-    if (lane.sign < 0 && behind.pos < ahead.pos + gap) {
-      behind.pos = ahead.pos + gap;
+  return { vehicle: nearestVehicle, gap: nearestGap };
+}
+
+function computeTargetSpeed(vehicle) {
+  let target = vehicle.cruiseSpeed;
+
+  const redDistance = distanceToNextRed(vehicle);
+
+  if (redDistance < 24) {
+    const signalFactor = clamp((redDistance - 1.2) / 20, 0, 1);
+    target = Math.min(target, vehicle.cruiseSpeed * signalFactor);
+  }
+
+  const ahead = vehicleAhead(vehicle);
+
+  if (ahead.vehicle && ahead.gap < 15) {
+    const gapFactor = clamp((ahead.gap - 1.4) / 11, 0, 1);
+    const followSpeed =
+      ahead.vehicle.speed * gapFactor +
+      vehicle.cruiseSpeed * Math.max(0, gapFactor - 0.72);
+
+    target = Math.min(target, Math.max(0, followSpeed));
+  }
+
+  return clamp(target, 0, vehicle.cruiseSpeed);
+}
+
+function emergencySpacing() {
+  const routeKeys = Object.keys(routes);
+
+  for (const routeKey of routeKeys) {
+    const route = routes[routeKey];
+    const sameLane = vehicles
+      .filter(vehicle => vehicle.route.key === routeKey)
+      .sort((a, b) => route.sign > 0 ? b.pos - a.pos : a.pos - b.pos);
+
+    for (let index = 1; index < sameLane.length; index += 1) {
+      const ahead = sameLane[index - 1];
+      const behind = sameLane[index];
+      const minimumGap = 6.6;
+
+      const gap = route.sign * (ahead.pos - behind.pos);
+
+      if (gap < minimumGap) {
+        behind.pos = ahead.pos - route.sign * minimumGap;
+        behind.speed = Math.min(behind.speed, ahead.speed);
+      }
     }
   }
 }
@@ -191,85 +381,174 @@ function applyQueueSpacing(direction) {
 function updateVehicles(delta) {
   for (const vehicle of vehicles) {
     vehicle.previousPos = vehicle.pos;
-    const lane = lanes[vehicle.direction];
-    const step = vehicle.speed * delta * lane.sign;
+    vehicle.targetSpeed = computeTargetSpeed(vehicle);
 
-    if (!vehicle.committed && !isGreenFor(vehicle)) {
-      if (lane.sign > 0) {
-        vehicle.pos = Math.min(vehicle.pos + step, lane.stop);
-      } else {
-        vehicle.pos = Math.max(vehicle.pos + step, lane.stop);
-      }
+    const slowing = vehicle.targetSpeed < vehicle.speed;
+
+    if (slowing) {
+      vehicle.speed = Math.max(
+        vehicle.targetSpeed,
+        vehicle.speed - vehicle.braking * delta
+      );
     } else {
-      vehicle.pos += step;
+      vehicle.speed = Math.min(
+        vehicle.targetSpeed,
+        vehicle.speed + vehicle.acceleration * delta
+      );
     }
 
-    if (!vehicle.committed) {
-      if (
-        (lane.sign > 0 && vehicle.pos > lane.stop + 2) ||
-        (lane.sign < 0 && vehicle.pos < lane.stop - 2)
-      ) {
-        vehicle.committed = true;
-      }
-    }
+    vehicle.pos += vehicle.route.sign * vehicle.speed * delta;
+    vehicle.waiting = vehicle.speed < 0.55;
+
+    vehicle.element.classList.toggle('braking', slowing && vehicle.speed > 0.5);
+    vehicle.element.classList.toggle('waiting', vehicle.waiting);
   }
 
-  Object.keys(lanes).forEach(applyQueueSpacing);
+  emergencySpacing();
 
   for (let index = vehicles.length - 1; index >= 0; index -= 1) {
     const vehicle = vehicles[index];
-    const lane = lanes[vehicle.direction];
-
-    vehicle.waiting =
-      !vehicle.committed &&
-      Math.abs(vehicle.pos - vehicle.previousPos) < 0.025;
-
-    vehicle.element.classList.toggle('waiting', vehicle.waiting);
     renderVehicle(vehicle);
 
     const finished =
-      lane.sign > 0 ? vehicle.pos > lane.end : vehicle.pos < lane.end;
+      vehicle.route.sign > 0
+        ? vehicle.pos > vehicle.route.end
+        : vehicle.pos < vehicle.route.end;
 
     if (finished) {
       vehicle.element.remove();
       vehicles.splice(index, 1);
-      score += 10;
+      score += currentLevel === 2 ? 12 : 10;
       scoreDisplay.textContent = score;
       scoreDisplay.classList.remove('score-pop');
       void scoreDisplay.offsetWidth;
       scoreDisplay.classList.add('score-pop');
     }
   }
+
+  carsCount.textContent =
+    `${vehicles.length} vehículo${vehicles.length === 1 ? '' : 's'}`;
+}
+
+function getVehicleCenter(vehicle) {
+  if (vehicle.route.axis === 'x') {
+    return {
+      x: vehicle.pos + 2.9,
+      y: vehicle.route.fixed + 1.6
+    };
+  }
+
+  return {
+    x: vehicle.route.fixed + 1.6,
+    y: vehicle.pos + 2.9
+  };
+}
+
+function detectCollision() {
+  for (let i = 0; i < vehicles.length; i += 1) {
+    for (let j = i + 1; j < vehicles.length; j += 1) {
+      const a = vehicles[i];
+      const b = vehicles[j];
+
+      if (a.route.orientation === b.route.orientation) continue;
+      if (a.speed < 0.35 && b.speed < 0.35) continue;
+
+      const centerA = getVehicleCenter(a);
+      const centerB = getVehicleCenter(b);
+
+      const closeX = Math.abs(centerA.x - centerB.x) < 4.1;
+      const closeY = Math.abs(centerA.y - centerB.y) < 4.1;
+
+      if (closeX && closeY) {
+        triggerCrash(a, b);
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
+function triggerCrash(a, b) {
+  if (!running || crashPending) return;
+
+  crashPending = true;
+  running = false;
+  gameToken += 1;
+
+  a.element.classList.add('crashed');
+  b.element.classList.add('crashed');
+  crashFlash.classList.add('active');
+  gameBoard.classList.add('crash-state');
+
+  switchA.disabled = true;
+  switchB.disabled = true;
+
+  window.setTimeout(() => {
+    crashFlash.classList.remove('active');
+    showResult('crash');
+  }, 650);
 }
 
 function updateCongestion(delta) {
   const waitingCars = vehicles.filter(vehicle => vehicle.waiting).length;
-  const freeTrafficLimit = currentLevel === 2 ? 9 : 8;
-  const extraTraffic = Math.max(0, vehicles.length - freeTrafficLimit);
-  const target = Math.min(100, waitingCars * 12.5 + extraTraffic * 3);
+  const slowCars = vehicles.filter(
+    vehicle => vehicle.speed >= 0.55 && vehicle.speed < 2.2
+  ).length;
 
-  const rate = target > congestion ? 42 : 24;
+  const config = levels[currentLevel];
+  const extraTraffic = Math.max(
+    0,
+    vehicles.length - config.maxTrafficBeforePenalty
+  );
+
+  const target = clamp(
+    waitingCars * (currentLevel === 2 ? 7.2 : 9.5) +
+    slowCars * 1.6 +
+    extraTraffic * 2.4,
+    0,
+    100
+  );
+
+  const changeRate = target > congestion ? 28 : 18;
   const difference = target - congestion;
 
-  if (Math.abs(difference) > 0.01) {
+  if (Math.abs(difference) > 0.02) {
     congestion +=
-      Math.sign(difference) * Math.min(Math.abs(difference), rate * delta);
+      Math.sign(difference) *
+      Math.min(Math.abs(difference), changeRate * delta);
   }
 
-  congestion = Math.max(0, Math.min(100, congestion));
+  congestion = clamp(congestion, 0, 100);
   maxCongestion = Math.max(maxCongestion, congestion);
 
   const rounded = Math.round(congestion);
   congestionText.textContent = `${rounded}%`;
   congestionBar.style.width = `${rounded}%`;
   congestionMeter.setAttribute('aria-valuenow', String(rounded));
-  congestionBar.classList.toggle('warning', rounded >= 55 && rounded < 80);
+
+  congestionBar.classList.toggle(
+    'warning',
+    rounded >= 55 && rounded < 80
+  );
   congestionBar.classList.toggle('danger', rounded >= 80);
   gameBoard.classList.toggle('critical', rounded >= 80);
 
+  if (rounded < 40) {
+    trafficState.textContent = 'Flujo estable';
+  } else if (rounded < 70) {
+    trafficState.textContent = 'Tráfico intenso';
+  } else {
+    trafficState.textContent = 'Congestión alta';
+  }
+
   if (congestion >= 99.5) {
     overloadTime += delta;
-    if (overloadTime >= 0.8) endGame('lose');
+
+    if (overloadTime >= 0.8) {
+      running = false;
+      showResult('congestion');
+    }
   } else {
     overloadTime = Math.max(0, overloadTime - delta * 2);
   }
@@ -283,35 +562,78 @@ function updateTimer(delta) {
   if (remainingTime <= 0) {
     remainingTime = 0;
     timeDisplay.textContent = '00:00';
-    endGame('win');
+    running = false;
+    showResult('win');
   }
+}
+
+function chooseRouteKey() {
+  const horizontalRoutes = ['E', 'W'];
+  const verticalRoutes =
+    currentLevel === 1
+      ? ['S', 'N']
+      : ['AS', 'AN', 'BS', 'BN'];
+
+  let axis = waveAxis;
+
+  if (waveRemaining <= 0) {
+    const horizontalChance = currentLevel === 2 ? 0.58 : 0.52;
+    axis = Math.random() < horizontalChance ? 'horizontal' : 'vertical';
+  }
+
+  const pool = axis === 'horizontal' ? horizontalRoutes : verticalRoutes;
+  return pool[Math.floor(Math.random() * pool.length)];
 }
 
 function scheduleNextSpawn() {
   const config = levels[currentLevel];
-  nextSpawn =
-    config.spawnMin + Math.random() * (config.spawnMax - config.spawnMin);
+
+  if (waveRemaining > 0) {
+    nextSpawn = randomBetween(
+      currentLevel === 2 ? 0.48 : 0.62,
+      currentLevel === 2 ? 0.78 : 0.92
+    );
+    waveRemaining -= 1;
+    return;
+  }
+
+  nextSpawn = randomBetween(config.spawnMin, config.spawnMax);
+
+  if (Math.random() < config.waveChance) {
+    waveAxis = Math.random() < (currentLevel === 2 ? 0.6 : 0.52)
+      ? 'horizontal'
+      : 'vertical';
+
+    waveRemaining =
+      currentLevel === 2
+        ? Math.floor(randomBetween(2, 5))
+        : Math.floor(randomBetween(2, 4));
+  }
 }
 
-function spawnVehicle() {
-  const directions = Object.keys(lanes);
-  const direction = directions[Math.floor(Math.random() * directions.length)];
-  const sameDirection = vehicles.filter(
-    vehicle => vehicle.direction === direction
-  );
-  const lane = lanes[direction];
+function spawnTraffic() {
+  const firstChoice = chooseRouteKey();
 
-  const blockedAtSpawn = sameDirection.some(vehicle =>
-    lane.sign > 0
-      ? vehicle.pos < lane.start + 10
-      : vehicle.pos > lane.start - 10
-  );
+  if (createVehicle(firstChoice)) return;
 
-  if (!blockedAtSpawn) createVehicle(direction);
+  const fallback = Object.keys(routes)
+    .sort(() => Math.random() - 0.5)
+    .find(routeKey => createVehicle(routeKey));
+
+  return Boolean(fallback);
+}
+
+function resetSignals() {
+  signalStates.A = 'horizontal';
+  signalStates.B = 'horizontal';
+  signalSwitching.A = false;
+  signalSwitching.B = false;
+  paintSignals();
 }
 
 function clearVehicles() {
   vehicles.splice(0).forEach(vehicle => vehicle.element.remove());
+  carsCount.textContent = '0 vehículos';
 }
 
 function resetStats() {
@@ -319,102 +641,141 @@ function resetStats() {
   congestion = 0;
   maxCongestion = 0;
   overloadTime = 0;
+  crashPending = false;
 
   scoreDisplay.textContent = '0';
-  scoreDisplay.classList.remove('score-pop');
   congestionText.textContent = '0%';
   congestionBar.style.width = '0%';
   congestionBar.classList.remove('warning', 'danger');
   congestionMeter.setAttribute('aria-valuenow', '0');
   timeDisplay.classList.remove('urgent');
-  gameBoard.classList.remove('critical');
+  gameBoard.classList.remove('critical', 'crash-state');
+  crashFlash.classList.remove('active');
+  trafficState.textContent = 'Flujo estable';
 }
 
 function startLevel(levelNumber) {
   gameToken += 1;
   const token = gameToken;
+
   currentLevel = levelNumber;
-  const config = levels[currentLevel];
+  routes = makeRoutes(currentLevel);
 
   clearVehicles();
   resetStats();
+  resetSignals();
+
+  const config = levels[currentLevel];
 
   levelName.textContent = config.title;
   levelSubtitle.textContent = config.subtitle;
   remainingTime = config.duration;
   timeDisplay.textContent = formatTime(remainingTime);
-  gameBoard.classList.toggle('rush-hour', currentLevel === 2);
 
-  greenDirection = 'horizontal';
-  switching = false;
-  switchBtn.disabled = false;
-  paintLights();
-  showScreen('game');
+  gameBoard.classList.toggle('level-two', currentLevel === 2);
+  gameBoard.classList.toggle('level-one', currentLevel === 1);
+  gameBoard.classList.toggle('rush-hour', currentLevel === 2);
+  gameScreen.classList.toggle('level-two-ui', currentLevel === 2);
 
   running = true;
+  switchA.disabled = false;
+  switchB.disabled = currentLevel !== 2;
+
   spawnElapsed = 0;
+  waveRemaining = 0;
+  waveAxis = 'horizontal';
   scheduleNextSpawn();
   lastFrame = performance.now();
+  paintSignals();
+  showScreen('game');
 
-  config.startingCars.forEach((direction, index) => {
+  const starterRoutes =
+    currentLevel === 1
+      ? ['E', 'W', 'S']
+      : ['E', 'W', 'AS', 'BN', 'E'];
+
+  starterRoutes.forEach((routeKey, index) => {
     window.setTimeout(() => {
-      if (running && token === gameToken) createVehicle(direction);
-    }, index * 280);
+      if (running && token === gameToken) createVehicle(routeKey);
+    }, index * 360);
   });
 }
 
 function stopGame() {
   gameToken += 1;
   running = false;
-  switching = false;
-  switchBtn.disabled = false;
+  crashPending = false;
+  signalSwitching.A = false;
+  signalSwitching.B = false;
+
   clearVehicles();
-  gameBoard.classList.remove('critical', 'rush-hour');
-  timeDisplay.classList.remove('urgent');
+  resetStats();
+
+  gameBoard.classList.remove('level-two', 'rush-hour');
+  gameScreen.classList.remove('level-two-ui');
+
   showScreen('menu');
 }
 
-function endGame(type) {
-  if (!running) return;
-
+function showResult(type) {
   gameToken += 1;
   running = false;
-  switching = false;
-  switchBtn.disabled = true;
+  signalSwitching.A = false;
+  signalSwitching.B = false;
 
   resultScore.textContent = score;
   resultCongestion.textContent = `${Math.round(maxCongestion)}%`;
-  resultCard.classList.remove('win', 'lose');
 
-  if (type === 'lose') {
-    resultCard.classList.add('lose');
-    resultIcon.textContent = '⚠️';
-    resultEyebrow.textContent = `Nivel ${currentLevel} · Congestión crítica`;
-    resultTitle.textContent = 'GAME OVER';
-    primaryResultBtn.textContent = 'REINTENTAR';
-    resultAction = () => startLevel(currentLevel);
-  } else {
+  resultCard.classList.remove('win', 'lose', 'crash');
+
+  if (type === 'win') {
     resultCard.classList.add('win');
     resultIcon.textContent = '🏆';
 
     if (currentLevel === 1) {
       resultEyebrow.textContent = 'Nivel 1 superado';
-      resultTitle.textContent = '¡NIVEL COMPLETADO!';
-      primaryResultBtn.textContent = 'SIGUIENTE NIVEL';
+      resultTitle.textContent = '¡INTERSECCIÓN CONTROLADA!';
+      resultMessage.textContent =
+        'Buen trabajo. Ahora tendrás que coordinar dos cruces al mismo tiempo.';
+      primaryResultBtn.textContent = 'IR AL NIVEL 2';
       resultAction = () => startLevel(2);
     } else {
       resultEyebrow.textContent = 'Hora pico superada';
-      resultTitle.textContent = '¡TRÁFICO CONTROLADO!';
+      resultTitle.textContent = '¡CIUDAD EN MOVIMIENTO!';
+      resultMessage.textContent =
+        'Lograste mantener el flujo en las dos intersecciones.';
       primaryResultBtn.textContent = 'JUGAR DE NUEVO';
       resultAction = () => startLevel(1);
     }
+  }
+
+  if (type === 'congestion') {
+    resultCard.classList.add('lose');
+    resultIcon.textContent = '🚧';
+    resultEyebrow.textContent = `Nivel ${currentLevel} · Congestión crítica`;
+    resultTitle.textContent = 'TRÁFICO COLAPSADO';
+    resultMessage.textContent =
+      'Demasiados vehículos quedaron detenidos. Alterna los semáforos antes de que las filas crezcan.';
+    primaryResultBtn.textContent = 'REINTENTAR';
+    resultAction = () => startLevel(currentLevel);
+  }
+
+  if (type === 'crash') {
+    resultCard.classList.add('crash');
+    resultIcon.textContent = '💥';
+    resultEyebrow.textContent = `Nivel ${currentLevel} · Accidente`;
+    resultTitle.textContent = '¡COLISIÓN!';
+    resultMessage.textContent =
+      'Dos vehículos coincidieron dentro de la intersección. Espera a que el cruce se despeje antes de abrir la otra vía.';
+    primaryResultBtn.textContent = 'REINTENTAR';
+    resultAction = () => startLevel(currentLevel);
   }
 
   showScreen('result');
 }
 
 function gameLoop(now) {
-  const delta = Math.min((now - lastFrame) / 1000, 0.05);
+  const delta = Math.min((now - lastFrame) / 1000, 0.045);
   lastFrame = now;
 
   if (running) {
@@ -422,14 +783,19 @@ function gameLoop(now) {
 
     if (spawnElapsed >= nextSpawn) {
       spawnElapsed = 0;
-      spawnVehicle();
+      spawnTraffic();
       scheduleNextSpawn();
     }
 
     updateVehicles(delta);
-    updateCongestion(delta);
 
-    if (running) updateTimer(delta);
+    if (!detectCollision() && running) {
+      updateCongestion(delta);
+    }
+
+    if (running) {
+      updateTimer(delta);
+    }
   }
 
   requestAnimationFrame(gameLoop);
@@ -440,19 +806,25 @@ howBtn.addEventListener('click', () => showScreen('how'));
 howBackBtn.addEventListener('click', () => showScreen('menu'));
 menuBtn.addEventListener('click', stopGame);
 resultMenuBtn.addEventListener('click', stopGame);
+
 primaryResultBtn.addEventListener('click', () => {
   if (resultAction) resultAction();
 });
-switchBtn.addEventListener('click', switchLights);
+
+switchA.addEventListener('click', () => switchIntersection('A'));
+switchB.addEventListener('click', () => switchIntersection('B'));
 
 window.addEventListener('keydown', event => {
-  if (
-    event.code === 'Space' &&
-    screens.game.classList.contains('active') &&
-    !event.repeat
-  ) {
+  if (!screens.game.classList.contains('active') || event.repeat) return;
+
+  if (event.code === 'Space') {
     event.preventDefault();
-    switchLights();
+    switchIntersection('A');
+  }
+
+  if (event.code === 'KeyB' && currentLevel === 2) {
+    event.preventDefault();
+    switchIntersection('B');
   }
 });
 
@@ -460,5 +832,6 @@ document.addEventListener('visibilitychange', () => {
   lastFrame = performance.now();
 });
 
-paintLights();
+routes = makeRoutes(1);
+resetSignals();
 requestAnimationFrame(gameLoop);
