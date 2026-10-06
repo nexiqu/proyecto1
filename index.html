@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Control de Tráfico</title>
   <meta name="description" content="Juego de gestión de tráfico y semáforos." />
-  <link rel="stylesheet" href="style.css?v=20261005-2" />
+  <link rel="stylesheet" href="style.css?v=20261005-3" />
 </head>
 <body>
   <main class="app-shell">
@@ -49,6 +49,13 @@
             </label>
           </div>
         </fieldset>
+        <div class="session-best" aria-label="Mejores puntuaciones de la sesión">
+          <span class="session-best-title">🏆 MEJORES PUNTUACIONES</span>
+          <div class="session-best-grid">
+            <span>Nivel 1 <strong id="bestScoreLevel1">0</strong></span>
+            <span>Nivel 2 <strong id="bestScoreLevel2">0</strong></span>
+          </div>
+        </div>
         <div class="menu-actions">
           <button id="playBtn" class="btn btn-primary">▶ JUGAR NIVEL 1</button>
           <button id="howBtn" class="btn btn-secondary">CÓMO JUGAR</button>
@@ -87,7 +94,6 @@
         <div class="hud-block hud-score">
           <span class="hud-label">PUNTUACIÓN</span>
           <strong id="scoreDisplay">0</strong>
-          <small class="hud-best">Mejor del nivel: <b id="bestScoreDisplay">0</b></small>
         </div>
       </header>
 
@@ -182,6 +188,6 @@
     </section>
   </main>
 
-  <script src="script.js?v=20261005-2"></script>
+  <script src="script.js?v=20261005-3"></script>
 </body>
 </html>
