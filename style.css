@@ -226,6 +226,16 @@ kbd {
 .hud-center { min-width: 110px; text-align: center; }
 .hud-center strong { font-size: 1.7rem; font-variant-numeric: tabular-nums; }
 .hud-score { text-align: right; }
+.hud-best {
+  margin-top: 2px;
+  color: #8ba0b4;
+  font-size: .68rem;
+  font-weight: 800;
+}
+.hud-best b {
+  color: #ffd23d;
+  font-variant-numeric: tabular-nums;
+}
 
 .game-board {
   position: relative;
