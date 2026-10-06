@@ -28,6 +28,8 @@ const levelName = document.getElementById('levelName');
 const levelSubtitle = document.getElementById('levelSubtitle');
 const timeDisplay = document.getElementById('timeDisplay');
 const scoreDisplay = document.getElementById('scoreDisplay');
+const bestScore1 = document.getElementById('bestScore1');
+const bestScore2 = document.getElementById('bestScore2');
 const trafficState = document.getElementById('trafficState');
 const carsCount = document.getElementById('carsCount');
 
@@ -87,6 +89,17 @@ let waveAxis = 'horizontal';
 let vehicleId = 0;
 let gameToken = 0;
 let resultAction = null;
+
+// Se conserva solo durante la sesión actual de la página.
+const bestScores = { 1: 0, 2: 0 };
+
+function updateBestScore() {
+  if (score > bestScores[currentLevel]) {
+    bestScores[currentLevel] = score;
+  }
+  bestScore1.textContent = bestScores[1];
+  bestScore2.textContent = bestScores[2];
+}
 
 const vehicles = [];
 
@@ -730,6 +743,7 @@ function stopGame() {
 
 function showResult(type) {
   gameToken += 1;
+  updateBestScore();
   running = false;
   signalSwitching.A = false;
   signalSwitching.B = false;
