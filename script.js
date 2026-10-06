@@ -28,7 +28,8 @@ const levelName = document.getElementById('levelName');
 const levelSubtitle = document.getElementById('levelSubtitle');
 const timeDisplay = document.getElementById('timeDisplay');
 const scoreDisplay = document.getElementById('scoreDisplay');
-const bestScoreDisplay = document.getElementById('bestScoreDisplay');
+const bestScoreLevel1 = document.getElementById('bestScoreLevel1');
+const bestScoreLevel2 = document.getElementById('bestScoreLevel2');
 const trafficState = document.getElementById('trafficState');
 const carsCount = document.getElementById('carsCount');
 
@@ -90,14 +91,19 @@ let vehicleId = 0;
 let gameToken = 0;
 let resultAction = null;
 
-// Se conserva solo durante la sesión actual de la página.
+// Mejores puntuaciones de la sesión actual.
 const bestScores = { 1: 0, 2: 0 };
 
-function updateBestScore() {
+function renderBestScores() {
+  bestScoreLevel1.textContent = bestScores[1];
+  bestScoreLevel2.textContent = bestScores[2];
+}
+
+function saveBestScore() {
   if (score > bestScores[currentLevel]) {
     bestScores[currentLevel] = score;
   }
-  bestScoreDisplay.textContent = bestScores[currentLevel];
+  renderBestScores();
 }
 
 const vehicles = [];
@@ -443,7 +449,6 @@ function updateVehicles(delta) {
       vehicles.splice(index, 1);
       score += currentLevel === 2 ? 12 : 10;
       scoreDisplay.textContent = score;
-      updateBestScore();
       scoreDisplay.classList.remove('score-pop');
       void scoreDisplay.offsetWidth;
       scoreDisplay.classList.add('score-pop');
@@ -695,7 +700,6 @@ function startLevel(levelNumber) {
   levelSubtitle.textContent = config.subtitle;
   remainingTime = config.duration;
   timeDisplay.textContent = formatTime(remainingTime);
-  bestScoreDisplay.textContent = bestScores[currentLevel];
 
   gameBoard.classList.toggle('level-two', currentLevel === 2);
   gameBoard.classList.toggle('level-one', currentLevel === 1);
@@ -744,7 +748,7 @@ function stopGame() {
 
 function showResult(type) {
   gameToken += 1;
-  updateBestScore();
+  saveBestScore();
   running = false;
   signalSwitching.A = false;
   signalSwitching.B = false;
@@ -901,4 +905,5 @@ document.addEventListener('visibilitychange', () => {
 routes = makeRoutes(1);
 resetSignals();
 setSelectedLevel(getSelectedLevel());
+renderBestScores();
 requestAnimationFrame(gameLoop);
