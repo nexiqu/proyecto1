@@ -259,3 +259,5 @@ Con esta etapa, el proyecto pasa de una simulación sencilla de semáforos a un 
 - Selector de **Nivel 1** o **Nivel 2** desde el menú principal.
 - La congestión aumenta de forma más gradual para dar más tiempo de reacción.
 - Vehículos rediseñados con diferentes carrocerías, ventanas, ruedas, luces y taxis.
+
+- Muestra la **mejor puntuación de cada nivel durante la sesión**. Al cerrar o refrescar la página, puede reiniciarse.
