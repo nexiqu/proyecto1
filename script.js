@@ -28,8 +28,7 @@ const levelName = document.getElementById('levelName');
 const levelSubtitle = document.getElementById('levelSubtitle');
 const timeDisplay = document.getElementById('timeDisplay');
 const scoreDisplay = document.getElementById('scoreDisplay');
-const bestScore1 = document.getElementById('bestScore1');
-const bestScore2 = document.getElementById('bestScore2');
+const bestScoreDisplay = document.getElementById('bestScoreDisplay');
 const trafficState = document.getElementById('trafficState');
 const carsCount = document.getElementById('carsCount');
 
@@ -43,6 +42,7 @@ const resultEyebrow = document.getElementById('resultEyebrow');
 const resultTitle = document.getElementById('resultTitle');
 const resultMessage = document.getElementById('resultMessage');
 const resultScore = document.getElementById('resultScore');
+const resultBestScore = document.getElementById('resultBestScore');
 const resultCongestion = document.getElementById('resultCongestion');
 
 const levels = {
@@ -97,8 +97,7 @@ function updateBestScore() {
   if (score > bestScores[currentLevel]) {
     bestScores[currentLevel] = score;
   }
-  bestScore1.textContent = bestScores[1];
-  bestScore2.textContent = bestScores[2];
+  bestScoreDisplay.textContent = bestScores[currentLevel];
 }
 
 const vehicles = [];
@@ -444,6 +443,7 @@ function updateVehicles(delta) {
       vehicles.splice(index, 1);
       score += currentLevel === 2 ? 12 : 10;
       scoreDisplay.textContent = score;
+      updateBestScore();
       scoreDisplay.classList.remove('score-pop');
       void scoreDisplay.offsetWidth;
       scoreDisplay.classList.add('score-pop');
@@ -695,6 +695,7 @@ function startLevel(levelNumber) {
   levelSubtitle.textContent = config.subtitle;
   remainingTime = config.duration;
   timeDisplay.textContent = formatTime(remainingTime);
+  bestScoreDisplay.textContent = bestScores[currentLevel];
 
   gameBoard.classList.toggle('level-two', currentLevel === 2);
   gameBoard.classList.toggle('level-one', currentLevel === 1);
@@ -749,6 +750,7 @@ function showResult(type) {
   signalSwitching.B = false;
 
   resultScore.textContent = score;
+  resultBestScore.textContent = bestScores[currentLevel];
   resultCongestion.textContent = `${Math.round(maxCongestion)}%`;
 
   resultCard.classList.remove('win', 'lose', 'crash');
